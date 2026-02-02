@@ -4,9 +4,9 @@ A secure, self-service CLI tool for automating AWS resource provisioning. This t
 
 ## 🚀 Features
 
-* **Smart Provisioning:** automatically fetches the latest AMIs for Ubuntu and Amazon Linux via SSM Parameter Store.
+* **Smart Provisioning:** Automatically fetches the latest AMIs for Ubuntu and Amazon Linux via SSM Parameter Store.
 * **Safety Guardrails:** Enforces a hard cap of **2 running instances** to prevent billing surprises.
-* **Tag Enforcement:** Automatically tags all resources (`CreatedBy: platform-cli`) and refuses to touch resources created outside the tool.
+* **Tag Enforcement:** Automatically tags all resources (`CreatedBy: Hi-platform-cli`) and refuses to touch resources created outside the tool.
 * **State Awareness:** Checks if an instance is already running or stopped before attempting actions to prevent errors.
 * **Interactive CLI:** Built with `click` for a robust command-line experience.
 

@@ -27,20 +27,24 @@ def get_global_count():
         for bucket in s3_response['Buckets']:
             bucket_name = bucket['Name']
             try:
-                # asking for tags for each bucket
                 tag_response = s3.get_bucket_tagging(Bucket=bucket_name)
                 tags = tag_response.get('TagSet', [])
                 
-                # if tags exists
+                # Check our tag 
                 for tag in tags:
                     if tag['Key'] == 'CreatedBy' and tag['Value'] == 'Hi-platform-cli':
                         s3_count += 1
                         break # found tag
                         
             except ClientError as e:
-                # if bucket has no tags
-                if e.response['Error']['Code'] != 'NoSuchTagSet':
-                    print(f"Error checking tags for bucket {bucket_name}: {e}")
+                error_code = e.response['Error']['Code']
+                
+                if error_code == 'AccessDenied':
+                    continue 
+                elif error_code == 'NoSuchTagSet':
+                    continue
+                else:
+                    print(f"Warning: Could not check bucket {bucket_name}: {e}")
     r53_count = 0
     
     # pagination for multiple zones
@@ -246,8 +250,10 @@ def create(pub, pri):
         click.echo("Error: You cannot specify both --pub and --pri.")
         sys.exit(1)
         
-    access_type = 'public' if pub else 'private'
+    if pub:
+        click.confirm("are you sure you want to create a PUBLIC Bucket ", abort=True)
 
+    access_type = 'public' if pub else 'private'
     try:
         boto3.client('sts').get_caller_identity()
     except (NoCredentialsError, ClientError):
@@ -368,6 +374,16 @@ def route53():
 @route53.command()
 @click.option('--domain', required=True, help='The domain name to create (e.g., example.com)')
 def create(domain):
+
+    click.echo("Checking global limits...")
+    total_count = get_global_count()
+
+    if total_count >= MAX_RESOURCES:
+        click.echo(f"Error: Global Limit reached. You have {total_count} resources running.")
+        sys.exit(1)
+
+    click.echo(f"Limit OK ({total_count+1}/{MAX_RESOURCES}). Creating dns zone for {domain}...")
+
     click.echo("Creating dns zones...")
     r53 = boto3.client('route53')
     ref = str(uuid.uuid4())
